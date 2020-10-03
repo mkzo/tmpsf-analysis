@@ -33,9 +33,9 @@ for w = weeks
     % fft
     for i = range
         clear z;
-        tag = 'temperature%02d';
+        z = zeros(19,54487);
+        tag = 'Thermistor %02d';
         fulltag = sprintf(tag, i);
-        %period
         %figure; 
         for j = 1:(length(samples)-1)
             x = data(i, samples(j):samples(j+1)); 
@@ -50,7 +50,6 @@ for w = weeks
             %color = sscanf(str(2:end),'%2x%2x%2x',[1 3])/255;
             z(j, :) = 2*abs(X(1:NFFT/2+1));
             %plot(f, 2*abs(X(1:NFFT/2+1)), 'Color', newcolors{end-j});
-            hold on;
         end
         %title("Fourier Frequency Plot of " + fulltag);
         %xlabel('Frequency (1/week)');       
@@ -59,24 +58,21 @@ for w = weeks
         %leg = legend(datestr(dates));
         %leg.FontSize = 6;
         
-        %z(16:17,2) = 0; %getting rid of outliers to better scales
+        %remove frequencies higher than max_freq)
+        max_freq = 20;
+        z = z(:, 1:length(f(f<max_freq)));
         figure;
-        heatmap(0:1:24.5,1:19,z,'ColorMap',parula);
-        caxis([0,1])
-        title("FFT Time Series at a 2 week interval, Thermistor 01" + fulltag);
-        xlabel('Frequency/week');       
-        ylabel('Power');
-         actual full plot (all periods)
-        figure; 
-        t = dates(1) + calendarDuration(0,0,0,0,0,0:11.1:(2102728)*11.1);
-        x = data(i, 1:2102729); 
-        x = x - mean(x);
-        plot(t, x);
-        xlim([dates(1), dates(end)]);
-        xtickformat('dd-MMM-yyyy');
-        title("Sampled Temperature Anomalies of " + fulltag);
-        xlabel('Date');       
-        ylabel('Temperature Anomalies (C)');
+        h = heatmap(z,'ColorMap', parula);
+        % prctile takes in a vector and calculates the 70th percentile
+        max_color = prctile(reshape(z, [1 numel(z)]),99.5);
+        caxis([0,max_color]);
+        title("Power Spectra at a 2 week interval, " + fulltag);
+        xlabel('Frequency (/week)');  
+        % rounded to nearest tenth
+        x_label = round(f(f<max_freq), 1);
+        h.XData = x_label;
+        ylabel('Time (week of deployment)');
+        %actual full plot (all periods)
         % lines for each period interval
         %for d = dates
         %    xline(datetime(d));
